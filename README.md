@@ -1,22 +1,33 @@
 # roder-opentui
 
-An OpenTUI/Bun terminal client for the Roder remote app-server. It speaks the Roder JSON-RPC 2.0 protocol over the authenticated remote WebSocket transport documented in `~/w/gode/docs/app-server`.
+An OpenTUI/Bun terminal client for the Roder app-server. By default it launches an embedded/bundled `roder app-server --listen stdio://` child process and speaks newline-delimited JSON-RPC over stdin/stdout, matching the IPC shape used by `~/w/gode-desktop`. It can also connect to an authenticated remote WebSocket app-server documented in `~/w/gode/docs/app-server`.
 
-## Start a Roder app-server
+## Bundle the embedded Roder server
 
-From a Roder checkout or installed `roder` binary:
-
-```sh
-roder app-server --remote --auth-token env:RODER_REMOTE_TOKEN --listen ws://127.0.0.1:4768
-```
-
-Remote Roder can also choose a random port; copy the printed URL/token into the client options.
-
-## Run this TUI
+Build/copy the Roder CLI into `resources/bin/roder`:
 
 ```sh
 bun install
-RODER_TOKEN="$RODER_REMOTE_TOKEN" bun run index.ts --url ws://127.0.0.1:4768 --cwd /path/to/project
+bun run bundle:roder
+```
+
+`bundle:roder` defaults to `../gode`; override with `RODER_SOURCE_DIR=/path/to/gode` or copy an existing binary with `RODER_BIN=/path/to/roder bun run bundle:roder`.
+
+## Run this TUI
+
+Embedded stdio IPC mode, the default:
+
+```sh
+bun run index.ts --cwd /path/to/project
+# or
+bun run start:embedded -- --cwd /path/to/project
+```
+
+Remote WebSocket mode:
+
+```sh
+roder app-server --remote --auth-token env:RODER_REMOTE_TOKEN --listen ws://127.0.0.1:4768
+RODER_TOKEN="$RODER_REMOTE_TOKEN" bun run start:remote -- --url ws://127.0.0.1:4768 --cwd /path/to/project
 ```
 
 Options:
@@ -25,7 +36,7 @@ Options:
 bun run index.ts --help
 ```
 
-Useful environment variables: `RODER_URL`, `RODER_TOKEN`, `RODER_CWD`, `RODER_MODEL`, `RODER_PROVIDER`, `RODER_REASONING`.
+Useful environment variables: `RODER_TRANSPORT`, `RODER_BIN`, `RODER_SERVER_COMMAND`, `RODER_URL`, `RODER_TOKEN`, `RODER_CWD`, `RODER_MODEL`, `RODER_PROVIDER`, `RODER_REASONING`.
 
 ## UI controls
 
@@ -49,4 +60,4 @@ Slash commands:
 
 ## Protocol coverage
 
-Implemented client surfaces include startup handshake, thread list/start/read/archive-level viewing, turn start/interrupt, live notification logging, model/tool/command/skill browsers, policy mode changes, approval/plan-exit resolution, raw JSON-RPC escape hatch, and reconnect/auth handling over `roder.remote.v1` + bearer token.
+Implemented client surfaces include startup handshake, embedded stdio IPC transport, remote `roder.remote.v1` WebSocket transport, thread list/start/read/archive-level viewing, turn start/interrupt, live notification logging, model/tool/command/skill browsers, policy mode changes, approval/plan-exit resolution, raw JSON-RPC escape hatch, and reconnect/auth handling for remote mode.

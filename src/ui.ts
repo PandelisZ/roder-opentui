@@ -1,5 +1,5 @@
 import { BoxRenderable, createCliRenderer, InputRenderable, ScrollBoxRenderable, TextAttributes, TextRenderable, type CliRenderer } from "@opentui/core"
-import type { RoderClient } from "./client"
+import type { RoderClientLike } from "./client"
 import type { AppConfig, CommandsListResult, InitializeResult, ModelListResult, SkillsListResult, ThreadItem, ThreadListResult, ThreadReadResult, ThreadStartResult, ThreadSummary, ThreadStateResult, ToolsListResult, TurnStartResult } from "./types"
 
 const palette = {
@@ -45,7 +45,7 @@ export class RoderTui {
   private commandMode = false
   private lastRaw: unknown
 
-  constructor(private client: RoderClient, private config: AppConfig) {}
+  constructor(private client: RoderClientLike, private config: AppConfig) {}
 
   async start() {
     this.renderer = await createCliRenderer({

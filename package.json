@@ -18,7 +18,10 @@
   "scripts": {
     "start": "bun run index.ts",
     "typecheck": "tsc --noEmit",
-    "test": "bun test"
+    "test": "bun test",
+    "bundle:roder": "node scripts/bundle-roder.mjs",
+    "start:remote": "bun run index.ts --transport remote",
+    "start:embedded": "bun run index.ts --transport embedded"
   },
   "bin": {
     "roder-opentui": "./index.ts"
