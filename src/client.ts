@@ -163,7 +163,8 @@ export class LocalRoderClient extends EventedClient {
     this.lines.on("line", line => { if (line.trim()) this.handleJsonText(line.trim()) })
     this.child.stderr.on("data", chunk => {
       this.stderrTail = `${this.stderrTail}${chunk}`.slice(-1200)
-      this.emit({ type: "error", message: chunk.toString().trim().slice(0, 300) })
+      const message = chunk.toString().trim().slice(0, 300)
+      if (message) this.emit({ type: "error", message })
     })
     this.child.once("exit", (code, signal) => {
       this.started = false

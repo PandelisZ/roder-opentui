@@ -303,7 +303,8 @@ export class RoderTui {
   }
 
   private handleNotification(method: string, params: unknown) {
-    this.log("event", `${method} ${compact(params)}`)
+    const summary = summarizeNotification(method, params)
+    if (summary) this.log("event", summary)
     if (method.startsWith("thread/") || method.includes("turn")) setTimeout(() => void this.refresh(), 250)
   }
 
@@ -330,20 +331,26 @@ export class RoderTui {
     const turns = this.currentThread.turns ?? []
     if (!turns.length) return `Thread ${this.currentThread.id}\n\nSend a message to start.`
     return turns.map(turn => {
-      const items = (turn.items ?? []).map(item => this.renderItem(item)).join("\n")
+      const items = (turn.items ?? [])
+        .map(item => this.renderItem(item))
+        .filter(Boolean)
+        .join("\n")
       return `╭─ turn ${short(turn.id)} ${turn.status}\n${items}\n╰─`
     }).join("\n\n")
   }
 
-  private renderItem(item: ThreadItem): string {
+  private renderItem(item: ThreadItem): string | null {
     const t = String((item as any).type ?? "raw")
     if (t === "userMessage") return `You\n${indent((item as any).text ?? "")}`
     if (t === "agentMessage") return `Roder${(item as any).phase ? ` [${(item as any).phase}]` : ""}\n${indent((item as any).text ?? "")}`
-    if (t === "reasoning") return `Reasoning\n${indent([...(item as any).summary ?? [], ...(item as any).content ?? []].join("\n"))}`
+    if (t === "reasoning") {
+      const text = [...(item as any).summary ?? [], ...(item as any).content ?? []].join("\n").trim()
+      return text ? `Reasoning\n${indent(text)}` : null
+    }
     if (t === "toolExecution") return `Tool ${(item as any).toolName} ${(item as any).status}\n${indent(compact((item as any).input))}${(item as any).output ? `\n${indent((item as any).output)}` : ""}${(item as any).error ? `\nERROR ${indent((item as any).error)}` : ""}`
     if (t === "error") return `Error\n${indent((item as any).message ?? "")}`
     if (t === "compaction") return `Compaction\n${indent((item as any).summary ?? "")}`
-    return `Raw\n${indent(compact(item))}`
+    return null
   }
 
   private renderSide(): string {
@@ -393,3 +400,16 @@ function renderGenericList(raw: any, key: string) { const items = raw?.[key] ?? 
 function renderModels(raw: any) { const models = raw?.models ?? []; return models.map((m: any) => `${m.isDefault ? "★" : " "} ${m.modelProvider}/${m.id} ${m.name ?? ""}`).join("\n") || "Run /models" }
 function renderCommands(raw: any) { const commands = raw?.commands ?? []; return commands.map((c: any) => `/${c.name}${c.argumentHint ? ` ${c.argumentHint}` : ""}\n  ${c.description ?? c.source ?? ""}`).join("\n\n") || "Built-ins: /new /threads /models /tools /commands /skills /logs /raw /quit" }
 function renderSkills(raw: any) { const skills = raw?.skills ?? []; return skills.map((s: any) => `${s.enabled === false ? "○" : "●"} ${s.name ?? s.id ?? s.title}\n  ${s.description ?? ""}`).join("\n\n") || "Run /skills" }
+function summarizeNotification(method: string, params: unknown): string | null {
+  const p = params as any
+  if (method.includes("delta")) return null
+  if (method === "thread/started") return `thread started ${short(p?.thread?.id)}`
+  if (method === "turn/started") return `turn started ${short(p?.turn?.id ?? p?.turnId)}`
+  if (method === "turn/completed") return `turn completed ${short(p?.turn?.id ?? p?.turnId)}`
+  if (method === "thread/status/changed") return `thread ${short(p?.threadId)} ${p?.status?.type ?? "status changed"}`
+  if (method === "thread/approvalRequested") return `approval needed ${p?.toolName ?? "tool"} ${short(p?.approvalId)}`
+  if (method === "thread/userInputRequested") return `input requested ${short(p?.requestId)}`
+  if (method === "thread/planExitRequested") return `plan exit requested ${short(p?.requestId)}`
+  if (method.startsWith("item/")) return null
+  return method
+}
