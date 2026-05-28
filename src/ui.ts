@@ -165,6 +165,11 @@ export class RoderTui {
         key.preventDefault()
       }
     })
+    this.input.on("enter", () => {
+      const value = this.input.value.trim()
+      this.input.value = ""
+      if (value) void this.submit(value)
+    })
   }
 
   private async bootstrap() {
